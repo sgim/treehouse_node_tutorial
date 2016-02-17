@@ -1,51 +1,36 @@
-var EventEmitter = require("events").EventEmitter;
-var https = require("https");
-var http = require("http");
-var util = require("util");
+var https = require("https"),
+    http = require("http");
 
-/**
- * An EventEmitter to get a Treehouse students profile.
- * @param username
- * @constructor
- */
-function Profile(username) {
+var printMessage = function (username, badgeCount, points) {
+  console.log(username + " has " + badgeCount + " total badge(s) and " + points + " points in JavaScript");
+};
 
-    EventEmitter.call(this);
+var printError = function (error) {
+  console.error(error.message);
+};
 
-    profileEmitter = this;
 
-    //Connect to the API URL (https://teamtreehouse.com/username.json)
-    var request = https.get("https://teamtreehouse.com/" + username + ".json", function(response) {
-        var body = "";
+module.exports.get = function (username) {
 
-        if (response.statusCode !== 200) {
-            request.abort();
-            //Status Code Error
-            profileEmitter.emit("error", new Error("There was an error getting the profile for " + username + ". (" + http.STATUS_CODES[response.statusCode] + ")"));
-        }
-
-        //Read the data
-        response.on('data', function (chunk) {
-            body += chunk;
-            profileEmitter.emit("data", chunk);
-        });
-
-        response.on('end', function () {
-            if(response.statusCode === 200) {
-                try {
-                    //Parse the data
-                    var profile = JSON.parse(body);
-                    profileEmitter.emit("end", profile);
-                } catch (error) {
-                    profileEmitter.emit("error", error);
-                }
-            }
-        }).on("error", function(error){
-            profileEmitter.emit("error", error);
-        });
-    });
+  https.get("https://teamtreehouse.com/" + username + ".json",
+    function (response) {
+      var body = "";
+      response.on("data", function (chunk) {
+        body += chunk;
+      });
+      response.on("end", function () {
+        if(response.statusCode === 200) {
+          try {
+          var profile = JSON.parse(body);
+  	  printMessage(username, profile.badges.length, profile.points.JavaScript);
+          } catch(error) {
+            printError(error);
+	  }
+	} else {
+          printError({message: "There was an error getting the profile for " + username + ". (" + http.STATUS_CODES[response.statusCode] + ")"});
+	}
+      });
+    })
+    .on("error", printError);
 }
 
-util.inherits( Profile, EventEmitter );
-
-module.exports = Profile;
