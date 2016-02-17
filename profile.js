@@ -1,36 +1,31 @@
+// cached variables for use in module
 var https = require("https"),
-    http = require("http");
+    http = require("http"),
+    print = require("./print"),
+    perror = print.error,
+    pmessage = print.message,
+    body, profile;
 
-var printMessage = function (username, badgeCount, points) {
-  console.log(username + " has " + badgeCount + " total badge(s) and " + points + " points in JavaScript");
-};
-
-var printError = function (error) {
-  console.error(error.message);
-};
-
-
+// module to export
 module.exports.get = function (username) {
-
-  https.get("https://teamtreehouse.com/" + username + ".json",
-    function (response) {
-      var body = "";
-      response.on("data", function (chunk) {
-        body += chunk;
-      });
-      response.on("end", function () {
-        if(response.statusCode === 200) {
-          try {
-          var profile = JSON.parse(body);
-  	  printMessage(username, profile.badges.length, profile.points.JavaScript);
-          } catch(error) {
-            printError(error);
-	  }
-	} else {
-          printError({message: "There was an error getting the profile for " + username + ". (" + http.STATUS_CODES[response.statusCode] + ")"});
-	}
-      });
+  https.get("https://teamtreehouse.com/" + username + ".json", function (response) {
+    body = "";
+    response.on("data", function (chunk) {
+      body += chunk;
     })
-    .on("error", printError);
+    .on("end", function () {
+      if(response.statusCode === 200) {
+        try {
+        profile = JSON.parse(body);
+	pmessage(username, profile.badges.length, profile.points.JavaScript);
+        } catch(error) {
+          perror(error);
+	}
+      } else {
+        perror({message: "There was an error getting the profile for " + username + ". (" + http.STATUS_CODES[response.statusCode] + ")"});
+      }
+    });
+  })
+  .on("error", perror);
 }
 
